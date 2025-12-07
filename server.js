@@ -9,7 +9,17 @@ const submissions = require("./routes/submissionRoutes");
 const auth = require("./routes/auth");
 
 const app = express();
-app.use(cors());
+
+// CORS for your frontend
+app.use(
+  cors({
+    origin: ["https://myfanstore.vercel.app", "http://localhost:3000"],
+    // Your frontend domain
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 // Connect DB
