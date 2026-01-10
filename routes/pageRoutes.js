@@ -1,69 +1,47 @@
 const express = require("express");
 const Page = require("../models/Page");
-const router = express.Router();
 const auth = require("../middleware/auth");
 const siteResolver = require("../middleware/siteResolver");
 
-// GET PAGE (PUBLIC)
-router.get("/", async (req, res) => {
+const router = express.Router();
+
+/* =============================
+   PUBLIC — GET PAGE
+============================= */
+router.get("/", siteResolver, async (req, res) => {
   try {
-    let page = await Page.findOne({ siteId: req.site._id });
+    let page = await Page.findOne({ site: req.site._id });
 
     if (!page) {
       page = await Page.create({
-        siteId: req.site._id,
+        site: req.site._id,
         pixelCode: "",
         themeColor: "#ffffff",
         sections: [],
       });
     }
 
-    res.json(page);
+    res.json({
+      pixelCode: page.pixelCode,
+      themeColor: page.themeColor,
+      sections: page.sections,
+    });
   } catch (err) {
-    console.error(err);
+    console.error("GET PAGE ERROR:", err);
     res.status(500).json({ error: "Failed to load page" });
   }
 });
 
-// SAVE PAGE (ADMIN)
-router.post("/", auth, async (req, res) => {
-  try {
-    const { pixelCode, themeColor, sections } = req.body;
-
-    let page = await Page.findOne({ siteId: req.site._id });
-
-    if (!page) {
-      page = new Page({
-        siteId: req.site._id,
-        pixelCode,
-        themeColor,
-        sections,
-      });
-    } else {
-      page.pixelCode = pixelCode;
-      page.themeColor = themeColor;
-      page.sections = sections;
-    }
-
-    await page.save();
-    res.json({ success: true });
-  } catch (err) {
-    console.error("SAVE PAGE ERROR:", err);
-    res.status(500).json({ error: "Failed to save page" });
-  }
-});
-
-// =============================
-// GET PAGE (ADMIN - protected)
-// =============================
+/* =============================
+   ADMIN — GET PAGE
+============================= */
 router.get("/admin", auth, siteResolver, async (req, res) => {
   try {
-    // 🔒 Ensure user belongs to this site
-    if (!req.user.siteId.equals(req.site._id)) {
+    if (!req.user.siteId || !req.user.siteId.equals(req.site._id)) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    let page = await Page.findOne({ siteId: req.site._id });
+    const page = await Page.findOne({ site: req.site._id });
 
     if (!page) {
       return res.json({
@@ -73,22 +51,26 @@ router.get("/admin", auth, siteResolver, async (req, res) => {
       });
     }
 
-    return res.json({
+    res.json({
       pixelCode: page.pixelCode,
       themeColor: page.themeColor,
       sections: page.sections,
     });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Failed to load admin page" });
+    console.error("ADMIN GET PAGE ERROR:", err);
+    res.status(500).json({ error: "Failed to load admin page" });
   }
 });
 
-// =============================
-// SAVE PAGE (ADMIN ONLY)
-// =============================
-router.post("/", auth, async (req, res) => {
+/* =============================
+   ADMIN — SAVE PAGE (AUTOSAVE)
+============================= */
+router.post("/", auth, siteResolver, async (req, res) => {
   try {
+    if (!req.user.siteId || !req.user.siteId.equals(req.site._id)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
     const { pixelCode, themeColor, sections } = req.body;
 
     let page = await Page.findOne({ site: req.site._id });
@@ -98,12 +80,12 @@ router.post("/", auth, async (req, res) => {
         site: req.site._id,
         pixelCode,
         themeColor,
-        sections: normalized,
+        sections,
       });
     } else {
       page.pixelCode = pixelCode;
       page.themeColor = themeColor;
-      page.sections = normalized;
+      page.sections = sections;
     }
 
     await page.save();

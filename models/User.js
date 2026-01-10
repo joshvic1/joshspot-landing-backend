@@ -17,7 +17,7 @@ const UserSchema = new mongoose.Schema({
   siteId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Site",
-    required: true,
+    default: null,
   },
 
   createdAt: {

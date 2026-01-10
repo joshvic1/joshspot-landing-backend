@@ -69,8 +69,7 @@ const PageSchema = new mongoose.Schema({
   site: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Site",
-    required: true,
-    index: true,
+    default: null,
   },
   pixelCode: String,
   themeColor: String,
