@@ -2,13 +2,16 @@ const express = require("express");
 const Page = require("../models/Page");
 const router = express.Router();
 const auth = require("../middleware/auth");
+const siteResolver = require("../middleware/siteResolver");
 
 // =============================
 // GET PAGE (PUBLIC - frontend)
 // =============================
-router.get("/", async (req, res) => {
+router.get("/", siteResolver, async (req, res) => {
   try {
-    let page = await Page.findOne();
+    const siteId = req.site._id;
+
+    let page = await Page.findOne({ siteId });
 
     if (!page) {
       return res.json({
@@ -24,6 +27,7 @@ router.get("/", async (req, res) => {
       sections: page.sections,
     });
   } catch (err) {
+    console.error(err);
     return res.status(500).json({ error: "Failed to load page" });
   }
 });
@@ -31,9 +35,14 @@ router.get("/", async (req, res) => {
 // =============================
 // GET PAGE (ADMIN - protected)
 // =============================
-router.get("/admin", auth, async (req, res) => {
+router.get("/admin", auth, siteResolver, async (req, res) => {
   try {
-    let page = await Page.findOne();
+    // 🔒 Ensure user belongs to this site
+    if (!req.user.siteId.equals(req.site._id)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    let page = await Page.findOne({ siteId: req.site._id });
 
     if (!page) {
       return res.json({
@@ -49,6 +58,7 @@ router.get("/admin", auth, async (req, res) => {
       sections: page.sections,
     });
   } catch (err) {
+    console.error(err);
     return res.status(500).json({ error: "Failed to load admin page" });
   }
 });
@@ -56,8 +66,13 @@ router.get("/admin", auth, async (req, res) => {
 // =============================
 // SAVE PAGE (ADMIN ONLY)
 // =============================
-router.post("/", auth, async (req, res) => {
+router.post("/", auth, siteResolver, async (req, res) => {
   try {
+    // 🔒 Ownership check
+    if (!req.user.siteId.equals(req.site._id)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
     const { pixelCode, themeColor, sections } = req.body;
 
     const normalized = sections.map((s) => ({
@@ -91,10 +106,15 @@ router.post("/", auth, async (req, res) => {
       html: s.html || "",
     }));
 
-    let page = await Page.findOne();
+    let page = await Page.findOne({ siteId: req.site._id });
 
     if (!page) {
-      page = new Page({ pixelCode, themeColor, sections: normalized });
+      page = new Page({
+        siteId: req.site._id,
+        pixelCode,
+        themeColor,
+        sections: normalized,
+      });
     } else {
       page.pixelCode = pixelCode;
       page.themeColor = themeColor;
@@ -102,10 +122,11 @@ router.post("/", auth, async (req, res) => {
     }
 
     await page.save();
-    res.json({ success: true });
+
+    return res.json({ success: true });
   } catch (err) {
     console.error("SAVE PAGE ERROR:", err);
-    res.status(500).json({ error: "Failed to save page" });
+    return res.status(500).json({ error: "Failed to save page" });
   }
 });
 

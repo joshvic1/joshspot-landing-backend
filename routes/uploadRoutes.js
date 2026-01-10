@@ -3,6 +3,8 @@ const router = express.Router();
 const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const auth = require("../middleware/auth");
+const siteResolver = require("../middleware/siteResolver");
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD,
@@ -10,18 +12,33 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_SECRET,
 });
 
+// ⚠️ Storage must be dynamic per site
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: {
-    folder: "landing_studio",
-    allowed_formats: ["jpg", "png", "jpeg", "webp"],
+  params: async (req) => {
+    if (!req.site) {
+      throw new Error("Site not resolved");
+    }
+
+    return {
+      folder: `landing_studio/${req.site._id}`,
+      allowed_formats: ["jpg", "png", "jpeg", "webp"],
+    };
   },
 });
 
 const upload = multer({ storage });
 
-router.post("/", upload.single("image"), (req, res) => {
+// =========================================
+// UPLOAD IMAGE (ADMIN ONLY)
+// =========================================
+router.post("/", auth, siteResolver, upload.single("image"), (req, res) => {
   try {
+    // 🔒 Ownership check
+    if (!req.user.siteId.equals(req.site._id)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
@@ -39,33 +56,53 @@ router.post("/", upload.single("image"), (req, res) => {
   }
 });
 
-router.post("/delete", async (req, res) => {
+// =========================================
+// DELETE IMAGE (ADMIN ONLY)
+// =========================================
+router.post("/delete", auth, siteResolver, async (req, res) => {
   try {
+    // 🔒 Ownership check
+    if (!req.user.siteId.equals(req.site._id)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
     const { url } = req.body;
 
     if (!url) {
       return res.status(400).json({ success: false, error: "No URL provided" });
     }
 
-    // Extract public_id from Cloudinary URL
+    // Expected format:
+    // landing_studio/{siteId}/filename.jpg
     const parts = url.split("/");
-    const filename = parts[parts.length - 1];
-    const publicId = "landing_studio/" + filename.split(".")[0];
+    const folderIndex = parts.findIndex((p) => p === "landing_studio");
 
-    console.log("🗑 Deleting Cloudinary image:", publicId);
+    if (folderIndex === -1) {
+      return res.status(400).json({ error: "Invalid image URL" });
+    }
+
+    const siteFolder = parts[folderIndex + 1];
+    const filename = parts[parts.length - 1].split(".")[0];
+    const publicId = `landing_studio/${siteFolder}/${filename}`;
+
+    // 🔒 Ensure image belongs to this site
+    if (siteFolder !== req.site._id.toString()) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
 
     const result = await cloudinary.uploader.destroy(publicId);
 
     if (result.result === "ok") {
       return res.json({ success: true });
-    } else {
-      return res.json({
-        success: false,
-        error: "Cloudinary delete failed",
-        result,
-      });
     }
+
+    return res.json({
+      success: false,
+      error: "Cloudinary delete failed",
+      result,
+    });
   } catch (err) {
+    console.error("DELETE ERROR:", err);
     return res.status(500).json({ success: false, error: err.message });
   }
 });

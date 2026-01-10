@@ -10,7 +10,7 @@ async function seedAdmin() {
     await mongoose.connect(process.env.MONGO_URI);
     console.log("MongoDB connected for seeding");
 
-    const exists = await User.findOne({ email: "admin@example.com" });
+    const exists = await User.findOne({ email: "admin@myfanstore.com" });
     if (exists) {
       console.log("Admin already exists");
       process.exit(0);
@@ -19,7 +19,7 @@ async function seedAdmin() {
     const hashed = await bcrypt.hash("admin123", 10);
 
     await User.create({
-      email: "admin@example.com",
+      email: "admin@myfanstore.com",
       password: hashed,
     });
 

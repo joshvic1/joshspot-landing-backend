@@ -1,40 +1,60 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
+const Site = require("../models/Site");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = process.env.JWT_SECRET || "SUPER_SECRET_KEY";
 
 // ---------------------------------------------------
-// REGISTER (create admin account)
+// REGISTER (create site + admin)
 // ---------------------------------------------------
 router.post("/register", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, siteName, domain } = req.body;
 
-    if (!email || !password)
+    if (!email || !password || !siteName || !domain) {
       return res.json({
         success: false,
-        message: "Email and password required",
+        message: "Email, password, site name and domain are required",
       });
+    }
 
-    // Check existing
-    const existing = await User.findOne({ email });
-    if (existing)
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
       return res.json({ success: false, message: "User already exists" });
+    }
 
-    // Hash password
+    const existingSite = await Site.findOne({ domain });
+    if (existingSite) {
+      return res.json({ success: false, message: "Domain already in use" });
+    }
+
     const hashed = await bcrypt.hash(password, 10);
 
-    const user = new User({
-      email,
-      password: hashed,
+    // 1️⃣ Create site
+    const site = await Site.create({
+      name: siteName,
+      domain: domain.toLowerCase(),
+      owner: null, // temporary
     });
 
-    await user.save();
+    // 2️⃣ Create user linked to site
+    const user = await User.create({
+      email,
+      password: hashed,
+      siteId: site._id,
+    });
 
-    return res.json({ success: true, message: "Admin created" });
+    // 3️⃣ Attach owner to site
+    site.owner = user._id;
+    await site.save();
+
+    return res.json({
+      success: true,
+      message: "Site and admin created successfully",
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ success: false, message: "Server error" });
@@ -45,25 +65,20 @@ router.post("/register", async (req, res) => {
 // LOGIN
 // ---------------------------------------------------
 router.post("/login", async (req, res) => {
-  console.log("🟡 JWT SECRET IN MIDDLEWARE:", process.env.JWT_SECRET);
-  console.log("🟡 TOKEN RECEIVED:", req.headers.authorization);
-  console.log("🟢 JWT SECRET DURING LOGIN:", JWT_SECRET);
-
   try {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user)
+    if (!user) {
       return res.json({ success: false, message: "Invalid credentials" });
+    }
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match)
+    if (!match) {
       return res.json({ success: false, message: "Invalid credentials" });
+    }
 
-    // Create JWT
-    const token = jwt.sign({ id: user._id, email: user.email }, JWT_SECRET, {
-      expiresIn: "7d",
-    });
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "7d" });
 
     return res.json({
       success: true,

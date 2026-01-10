@@ -1,0 +1,31 @@
+// models/Site.js
+const mongoose = require("mongoose");
+
+const SiteSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+
+  domain: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    index: true, // 🔥 critical for lookup speed
+  },
+
+  // 🔑 Site owner (admin user)
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+module.exports = mongoose.model("Site", SiteSchema);

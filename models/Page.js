@@ -4,7 +4,8 @@ const mongoose = require("mongoose");
 const SectionSchema = new mongoose.Schema({
   id: String,
   type: String,
-  hidden: { type: Boolean, default: false }, // <-- IMPORTANT FIX
+  hidden: { type: Boolean, default: false },
+
   // universal design settings
   bgColor: String,
   textColor: String,
@@ -12,7 +13,7 @@ const SectionSchema = new mongoose.Schema({
   buttonTextColor: String,
   buttonAlign: {
     type: String,
-    default: "left", // left | center | right
+    default: "left",
   },
 
   // universal content fields
@@ -65,6 +66,14 @@ const SectionSchema = new mongoose.Schema({
 });
 
 const PageSchema = new mongoose.Schema({
+  // 🔑 MULTI-TENANT OWNER
+  siteId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Site",
+    required: true,
+    index: true,
+  },
+
   pixelCode: String,
   themeColor: String,
   sections: [SectionSchema],
