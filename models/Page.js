@@ -66,7 +66,6 @@ const SectionSchema = new mongoose.Schema({
 });
 
 const PageSchema = new mongoose.Schema({
-  // 🔑 MULTI-TENANT OWNER
   siteId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Site",
