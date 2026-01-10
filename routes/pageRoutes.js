@@ -87,45 +87,9 @@ router.get("/admin", auth, siteResolver, async (req, res) => {
 // =============================
 // SAVE PAGE (ADMIN ONLY)
 // =============================
-router.post("/", auth, siteResolver, async (req, res) => {
+router.post("/", auth, async (req, res) => {
   try {
-    // 🔒 Ownership check
-    if (!req.user.siteId.equals(req.site._id)) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-
     const { pixelCode, themeColor, sections } = req.body;
-
-    const normalized = sections.map((s) => ({
-      id: s.id,
-      type: s.type,
-      hidden: s.hidden ?? false,
-
-      bgColor: s.bgColor || "#ffffff",
-      textColor: s.textColor || "#000000",
-      buttonColor: s.buttonColor || "#111111",
-      buttonTextColor: s.buttonTextColor || "#ffffff",
-      buttonAlign: s.buttonAlign || "left",
-
-      title: s.title || "",
-      text: s.text || "",
-      description: s.description || "",
-      deadline: s.deadline || "",
-
-      buttonText: s.buttonText || "",
-      buttonLink: s.buttonLink || "",
-      hasForm: s.hasForm || false,
-      formNameLabel: s.formNameLabel || "",
-      formPhoneLabel: s.formPhoneLabel || "",
-      formRedirect: s.formRedirect || "",
-
-      products: s.products || [],
-      testimonials: s.testimonials || [],
-      images: s.images || [],
-      faqs: s.faqs || [],
-
-      html: s.html || "",
-    }));
 
     let page = await Page.findOne({ siteId: req.site._id });
 
@@ -134,20 +98,19 @@ router.post("/", auth, siteResolver, async (req, res) => {
         siteId: req.site._id,
         pixelCode,
         themeColor,
-        sections: normalized,
+        sections,
       });
     } else {
       page.pixelCode = pixelCode;
       page.themeColor = themeColor;
-      page.sections = normalized;
+      page.sections = sections;
     }
 
     await page.save();
-
-    return res.json({ success: true });
+    res.json({ success: true });
   } catch (err) {
     console.error("SAVE PAGE ERROR:", err);
-    return res.status(500).json({ error: "Failed to save page" });
+    res.status(500).json({ error: "Failed to save page" });
   }
 });
 
