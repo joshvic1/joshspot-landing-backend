@@ -18,12 +18,12 @@ module.exports = async function (req, res, next) {
     const user = await User.findById(decoded.id);
 
     if (!user) {
-      return res.status(401).json({ error: "User not found" });
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
-    req.user = user; // includes siteId
+    req.user = user; // MUST include siteId
     next();
   } catch (err) {
-    return res.status(401).json({ error: "Invalid or expired token" });
+    return res.status(401).json({ error: "Unauthorized" });
   }
 };
