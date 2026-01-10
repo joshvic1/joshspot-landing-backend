@@ -32,9 +32,10 @@ app.use("/api/auth", authRoutes);
 
 // 🔐 TENANT-AWARE ROUTES
 app.use(siteResolver);
-app.use("/api/page", pageRoutes);
+
 app.use("/api/upload", uploadRoutes);
-app.use("/api/submissions", submissions);
+app.use("/api/page", siteResolver, pageRoutes);
+app.use("/api/submissions", siteResolver, submissions);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log("Backend running on", PORT));

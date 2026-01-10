@@ -66,13 +66,12 @@ const SectionSchema = new mongoose.Schema({
 });
 
 const PageSchema = new mongoose.Schema({
-  siteId: {
+  site: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Site",
     required: true,
     index: true,
   },
-
   pixelCode: String,
   themeColor: String,
   sections: [SectionSchema],

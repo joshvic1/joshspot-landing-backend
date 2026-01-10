@@ -91,22 +91,23 @@ router.post("/", auth, async (req, res) => {
   try {
     const { pixelCode, themeColor, sections } = req.body;
 
-    let page = await Page.findOne({ siteId: req.site._id });
+    let page = await Page.findOne({ site: req.site._id });
 
     if (!page) {
       page = new Page({
-        siteId: req.site._id,
+        site: req.site._id,
         pixelCode,
         themeColor,
-        sections,
+        sections: normalized,
       });
     } else {
       page.pixelCode = pixelCode;
       page.themeColor = themeColor;
-      page.sections = sections;
+      page.sections = normalized;
     }
 
     await page.save();
+
     res.json({ success: true });
   } catch (err) {
     console.error("SAVE PAGE ERROR:", err);
