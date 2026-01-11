@@ -1,3 +1,5 @@
+// backend/routes/pageRoutes.js
+
 const express = require("express");
 const router = express.Router();
 
@@ -21,7 +23,13 @@ router.get("/", siteResolver, async (req, res) => {
       });
     }
 
-    res.json(page);
+    res.json({
+      page,
+      site: {
+        name: req.site.name,
+        domain: req.site.domain,
+      },
+    });
   } catch (err) {
     console.error("GET PAGE ERROR:", err);
     res.status(500).json({ error: "Failed to load page" });
