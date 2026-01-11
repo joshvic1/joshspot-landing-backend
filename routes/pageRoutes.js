@@ -29,12 +29,12 @@ router.get("/", siteResolver, async (req, res) => {
 });
 
 /* ============================
-   ADMIN — AUTOSAVE PAGE
+   ADMIN — SAVE PAGE (AUTOSAVE)
 ============================ */
 router.post("/", auth, siteResolver, async (req, res) => {
   try {
-    // 🔒 SECURITY: user must own site
-    if (!req.user.siteId.equals(req.site._id)) {
+    // 🔒 HARD SECURITY CHECK
+    if (!req.user.siteId || !req.user.siteId.equals(req.site._id)) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
