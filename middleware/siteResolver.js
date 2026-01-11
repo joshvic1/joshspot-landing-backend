@@ -1,24 +1,21 @@
-// middleware/siteResolver.js
-const Site = require("../models/Site");
+const User = require("../models/User");
 
 module.exports = async function siteResolver(req, res, next) {
   try {
     const host = req.headers.host;
-
     if (!host) {
       return res.status(400).json({ error: "No host header" });
     }
 
-    // Remove port if present (example.com:3000)
     const domain = host.split(":")[0].toLowerCase();
 
-    const site = await Site.findOne({ domain });
+    const user = await User.findOne({ "site.domain": domain });
 
-    if (!site) {
+    if (!user) {
       return res.status(404).json({ error: "Site not found" });
     }
 
-    req.site = site;
+    req.siteUser = user;
     next();
   } catch (err) {
     console.error("Site resolver error:", err);
