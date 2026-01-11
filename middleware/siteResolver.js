@@ -1,15 +1,17 @@
+// middleware/siteResolver.js
+
 const Site = require("../models/Site");
 
 module.exports = async function siteResolver(req, res, next) {
   try {
-    const host = req.headers.host;
-    if (!host) {
-      return res.status(400).json({ error: "No host header" });
+    const domain =
+      req.headers["x-site-domain"] || req.headers.host?.split(":")[0];
+
+    if (!domain) {
+      return res.status(400).json({ error: "No domain provided" });
     }
 
-    const domain = host.split(":")[0].toLowerCase();
-
-    const site = await Site.findOne({ domain });
+    const site = await Site.findOne({ domain: domain.toLowerCase() });
 
     if (!site) {
       return res.status(404).json({ error: "Site not found" });

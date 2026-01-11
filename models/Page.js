@@ -1,3 +1,4 @@
+// backend/models/Page.js
 const mongoose = require("mongoose");
 
 const SectionSchema = new mongoose.Schema({
