@@ -19,6 +19,7 @@ const SectionSchema = new mongoose.Schema({
 
   buttonText: String,
   buttonLink: String,
+  hasForm: { type: Boolean, default: false },
 
   products: Array,
   testimonials: Array,
