@@ -20,6 +20,9 @@ const SectionSchema = new mongoose.Schema({
   buttonText: String,
   buttonLink: String,
   hasForm: { type: Boolean, default: false },
+  formNameLabel: { type: String, default: "" },
+  formPhoneLabel: { type: String, default: "" },
+  formRedirect: { type: String, default: "" },
 
   products: Array,
   testimonials: Array,
