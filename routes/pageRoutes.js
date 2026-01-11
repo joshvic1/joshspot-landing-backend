@@ -1,75 +1,65 @@
 const express = require("express");
 const router = express.Router();
 
-const User = require("../models/User");
+const Page = require("../models/Page");
 const auth = require("../middleware/auth");
 const siteResolver = require("../middleware/siteResolver");
 
-/**
- * =====================================================
- * GET PAGE (PUBLIC)
- * Used by:
- * - Homepage
- * - TikTokInjector
- * - Public visitors
- * =====================================================
- */
+/* ============================
+   PUBLIC — GET PAGE
+============================ */
 router.get("/", siteResolver, async (req, res) => {
   try {
-    // siteResolver already found the user
-    const user = req.siteUser;
+    let page = await Page.findOne({ site: req.site._id });
 
-    if (!user) {
-      return res.status(404).json({ error: "Site not found" });
+    if (!page) {
+      page = await Page.create({
+        site: req.site._id,
+        pixelCode: "",
+        themeColor: "#ffffff",
+        sections: [],
+      });
     }
 
-    // Always return page object
-    return res.json({
-      pixelCode: user.page?.pixelCode || "",
-      themeColor: user.page?.themeColor || "#ffffff",
-      sections: user.page?.sections || [],
-    });
+    res.json(page);
   } catch (err) {
     console.error("GET PAGE ERROR:", err);
-    return res.status(500).json({ error: "Failed to load page" });
+    res.status(500).json({ error: "Failed to load page" });
   }
 });
 
-/**
- * =====================================================
- * SAVE PAGE (ADMIN – AUTOSAVE)
- * Used by:
- * - BS Admin Editor
- * =====================================================
- */
+/* ============================
+   ADMIN — AUTOSAVE PAGE
+============================ */
 router.post("/", auth, siteResolver, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-
-    if (!user) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-
-    // 🔐 Make sure admin owns this site
-    if (user.site.domain !== req.siteUser.site.domain) {
+    // 🔒 SECURITY: user must own site
+    if (!req.user.siteId.equals(req.site._id)) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
     const { pixelCode, themeColor, sections } = req.body;
 
-    // 🪄 AUTOSAVE MAGIC
-    user.page = {
-      pixelCode: pixelCode || "",
-      themeColor: themeColor || "#ffffff",
-      sections: Array.isArray(sections) ? sections : [],
-    };
+    let page = await Page.findOne({ site: req.site._id });
 
-    await user.save();
+    if (!page) {
+      page = await Page.create({
+        site: req.site._id,
+        pixelCode,
+        themeColor,
+        sections,
+      });
+    } else {
+      page.pixelCode = pixelCode;
+      page.themeColor = themeColor;
+      page.sections = sections;
+    }
 
-    return res.json({ success: true });
+    await page.save();
+    res.json({ success: true });
   } catch (err) {
     console.error("SAVE PAGE ERROR:", err);
-    return res.status(500).json({ error: "Failed to save page" });
+    res.status(500).json({ error: "Failed to save page" });
   }
 });
 

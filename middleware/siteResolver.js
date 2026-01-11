@@ -1,4 +1,4 @@
-const User = require("../models/User");
+const Site = require("../models/Site");
 
 module.exports = async function siteResolver(req, res, next) {
   try {
@@ -9,13 +9,13 @@ module.exports = async function siteResolver(req, res, next) {
 
     const domain = host.split(":")[0].toLowerCase();
 
-    const user = await User.findOne({ "site.domain": domain });
+    const site = await Site.findOne({ domain });
 
-    if (!user) {
+    if (!site) {
       return res.status(404).json({ error: "Site not found" });
     }
 
-    req.siteUser = user;
+    req.site = site;
     next();
   } catch (err) {
     console.error("Site resolver error:", err);

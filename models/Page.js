@@ -1,4 +1,3 @@
-// models/Page.js
 const mongoose = require("mongoose");
 
 const SectionSchema = new mongoose.Schema({
@@ -6,62 +5,24 @@ const SectionSchema = new mongoose.Schema({
   type: String,
   hidden: { type: Boolean, default: false },
 
-  // universal design settings
   bgColor: String,
   textColor: String,
   buttonColor: String,
   buttonTextColor: String,
-  buttonAlign: {
-    type: String,
-    default: "left",
-  },
+  buttonAlign: { type: String, default: "left" },
 
-  // universal content fields
   title: String,
   text: String,
   description: String,
-  deadline: { type: String },
+  deadline: String,
 
-  // button
   buttonText: String,
   buttonLink: String,
-  formNameLabel: { type: String, default: "" },
-  formPhoneLabel: { type: String, default: "" },
-  hasForm: { type: Boolean, default: false },
-  formRedirect: String,
 
-  // product showcase
-  products: [
-    {
-      name: String,
-      desc: String,
-      price: String,
-      link: String,
-      image: String,
-    },
-  ],
-
-  // testimonials
-  testimonials: [
-    {
-      name: String,
-      quote: String,
-      stars: Number,
-    },
-  ],
-
-  // gallery
-  images: [String],
-
-  // FAQ
-  faqs: [
-    {
-      q: String,
-      a: String,
-    },
-  ],
-
-  // footer
+  products: Array,
+  testimonials: Array,
+  images: Array,
+  faqs: Array,
   html: String,
 });
 
@@ -69,11 +30,13 @@ const PageSchema = new mongoose.Schema({
   site: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Site",
-    default: null,
+    required: true,
+    index: true,
   },
-  pixelCode: String,
-  themeColor: String,
-  sections: [SectionSchema],
+
+  pixelCode: { type: String, default: "" },
+  themeColor: { type: String, default: "#ffffff" },
+  sections: { type: [SectionSchema], default: [] },
 });
 
 module.exports = mongoose.model("Page", PageSchema);
