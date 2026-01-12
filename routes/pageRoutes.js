@@ -13,6 +13,17 @@ const siteResolver = require("../middleware/siteResolver");
 router.get("/", siteResolver, async (req, res) => {
   try {
     let page = await Page.findOne({ site: req.site._id });
+    // 🚨 STALE EDITOR PROTECTION
+    if (
+      req.body.lastKnownUpdate &&
+      page?.updatedAt &&
+      new Date(req.body.lastKnownUpdate) < page.updatedAt
+    ) {
+      return res.status(409).json({
+        error: "Page was modified in another tab",
+        code: "STALE_EDITOR",
+      });
+    }
 
     if (!page) {
       page = await Page.create({

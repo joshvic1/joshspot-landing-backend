@@ -31,17 +31,20 @@ const SectionSchema = new mongoose.Schema({
   html: String,
 });
 
-const PageSchema = new mongoose.Schema({
-  site: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Site",
-    required: true,
-    index: true,
-  },
+const PageSchema = new mongoose.Schema(
+  {
+    site: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Site",
+      required: true,
+      index: true,
+    },
 
-  pixelCode: { type: String, default: "" },
-  themeColor: { type: String, default: "#ffffff" },
-  sections: { type: [SectionSchema], default: [] },
-});
+    pixelCode: { type: String, default: "" },
+    themeColor: { type: String, default: "#ffffff" },
+    sections: { type: [SectionSchema], default: [] },
+  },
+  { timestamps: true }
+);
 
 module.exports = mongoose.model("Page", PageSchema);
